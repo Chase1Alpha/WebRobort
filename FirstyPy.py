@@ -14,11 +14,15 @@ except urllib2.URLError, e:
 
 soup = BeautifulSoup(response)
 
-#print soup.html.find_all(href=re.compile("magnet"))
+# print soup.html.find_all(href=re.compile("magnet"))
 
 download = soup.html.find_all(href=re.compile("magnet"))
 
-def saveBrief(download):
-    fileName = "download.txt"
-    f = open(fileName, 'w+')
-    f.write(download.encode('utf-8'))
+def savemagnet(d):
+    filename = 'download.txt'
+    f = open(filename, 'w+')
+    f.write(str(d))
+    f.close()
+
+
+savemagnet(download)

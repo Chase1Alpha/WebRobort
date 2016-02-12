@@ -19,6 +19,7 @@ class Tool:
     replacePara = re.compile('<p.*?>')
     # 将换行符或双换行符替换为\n
     replaceBR = re.compile('<br><br>|<br>')
+
     # 将其余标签剔除
     removeExtraTag = re.compile('<.*?>')
 
@@ -36,7 +37,7 @@ class Tool:
 # 天天美剧爬虫类
 class TTMJ:
     # 初始化，传入基地址，是否只看楼主的参数
-    def __init__(self, baseUrl, floorTag):
+    def __init__(self, baseUrl):
         # base链接地址
         self.baseURL = baseUrl
         # HTML标签剔除工具类对象
@@ -47,18 +48,16 @@ class TTMJ:
         # self.floor = 1
         # 默认的标题，如果没有成功获取到标题的话则会用这个标题
         self.defaultTitle = u"天天美剧"
-        # 是否写入楼分隔符的标记
-        self.floorTag = floorTag
 
     # 获取网页的代码
-    def getPage(self, page):
+    def getPage(self):
         try:
             # 构建URL
             url = self.baseURL
             request = urllib2.Request(url)
             response = urllib2.urlopen(request)
-            # 返回UTF-8格式编码内容
-            return response.read().decode('utf-8')
+            # 返回gbk格式编码内容
+            return response.read().decode('gbk')
         # 无法连接，报错
         except urllib2.URLError, e:
             if hasattr(e, "reason"):
@@ -69,34 +68,37 @@ class TTMJ:
 
     def getPageNum(self, page):
         # 获取帖子页数的正则表达式
-        pattern = re.compile('<li class="l_reply_num.*?</span>.*?<span.*?>(.*?)</span>', re.S)
+        pattern = re.compile('<a href="?page=10">(.*?)</a>', re.S)
+        #print pattern
         result = re.search(pattern, page)
+        #print result
         if result:
             return result.group(1).strip()
         else:
             return None
 
-    # 获取帖子标题
-    def getTitle(self):
+    # 获取电视剧标题
+    def getTitle(self, page):
         # 得到标题的正则表达式
-        pattern = re.compile('<a href="http://www.ttmeiju.com/seed.*?>(.*?)</a>', re.S)
-        result = re.search(pattern)
+        pattern = re.compile('<td height="28" colspan="7" align="left"><h3>(.*?)</h3></td>', re.S)
+        result = re.search(pattern, page)
         if result:
             # 如果存在，则返回标题
             return result.group(1).strip()
         else:
             return None
 
-    # 获取每一层楼的内容,传入页面内容
+    # 获取网页的内容,传入页面内容
     def getContent(self, page):
-        # 匹配所有楼层的内容
-        pattern = re.compile('<a href="(.*?)"', re.S)
-        items = re.findall(pattern)
+        # 匹配所有的内容
+        pattern = re.compile('<a href=\'(.*?)\'', re.S)
+        items = re.findall(pattern, page)
         contents = []
         for item in items:
             # 将文本进行去除标签处理，同时在前后加入换行符
             content = "\n" + self.tool.replace(item) + "\n"
-            contents.append(content.encode('utf-8'))
+            contents.append(content.encode('gbk'))
+        print contents
         return contents
 
     def setFileTitle(self, title):
@@ -107,30 +109,28 @@ class TTMJ:
             self.file = open(self.defaultTitle + ".txt", "w+")
 
     def writeData(self, contents):
-        # 向文件写入每一楼的信息
+        # 向文件写入magnet的信息
         for item in contents:
-            if self.floorTag == '1':
-                # 楼之间的分隔符
-                floorLine = "\n" + str(
-                    self.floor) + u"-----------------------------------------------------------------------------------------\n"
-                self.file.write(floorLine)
             self.file.write(item)
-            self.floor += 1
+            #self.floor += 1
 
     def start(self):
-        indexPage = self.getPage(1)
+        indexPage = self.getPage()
+        #print indexPage
         pageNum = self.getPageNum(indexPage)
+        #print pageNum
         title = self.getTitle(indexPage)
+        #print title
         self.setFileTitle(title)
-        if pageNum == None:
-            print "URL已失效，请重试"
-            return
+        #if pageNum == None:
+            #print "URL已失效，请重试"
+            #return
         try:
-            print "该帖子共有" + str(pageNum) + "页"
-            for i in range(1, int(pageNum) + 1):
-                print "正在写入第" + str(i) + "页数据"
-                page = self.getPage(i)
-                contents = self.getContent(page)
+            #print "该帖子共有" + str(pageNum) + "页"
+            #for i in range(1, int(pageNum) + 1):
+                #print "正在写入第" + str(i) + "页数据"
+                #page = self.getPage(i)
+                contents = self.getContent(indexPage)
                 self.writeData(contents)
         # 出现写入异常
         except IOError, e:
@@ -139,10 +139,8 @@ class TTMJ:
             print "写入任务完成"
 
 
-print u"请输入帖子代号"
+print u"请输入网址"
 baseURL = 'http://www.ttmeiju.com/meiju/The.Big.Bang.Theory.html' + str(
     raw_input(u'http://www.ttmeiju.com/meiju/The.Big.Bang.Theory.html'))
-# seeLZ = raw_input("是否只获取楼主发言，是输入1，否输入0\n")
-floorTag = raw_input("是否写入楼层信息，是输入1，否输入0\n")
-ttmj = TTMJ(baseURL, floorTag)
+ttmj = TTMJ(baseURL)
 ttmj.start()

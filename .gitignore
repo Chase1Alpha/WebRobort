@@ -5,4 +5,5 @@
 *.txt
 
 #.idea contains infomration about PyCharm, not neceesary to be tracked
-.idea
+.idea/*
+.idea/inspectionProfiles/*
